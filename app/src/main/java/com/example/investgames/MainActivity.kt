@@ -182,13 +182,17 @@ fun MainScreen(
     var totalAportado by remember { mutableStateOf(0f) }
 
     // 🔁 Carregar do banco de dados
-    LaunchedEffect(Unit) {
-        db.metasDao().getMetaAtual().collect { meta ->
-            metaValor = meta?.valor ?: 0f
-            metaObjetivo = meta?.objetivo ?: ""
+    // 🔁 Atualiza sempre que navegar para a tela "home"
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == "home") {
+            db.metasDao().getMetaAtual().collect { meta ->
+                metaValor = meta?.valor ?: 0f
+                metaObjetivo = meta?.objetivo ?: ""
+            }
+            totalAportado = db.aporteDao().obterTotalAportado() ?: 0f
         }
-        totalAportado = db.aporteDao().obterTotalAportado() ?: 0f
     }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -244,9 +248,6 @@ fun MainScreen(
             composable("home") {
                 HomeScreen(
                     userName = userName,
-                    totalAportado = totalAportado, // você pode trocar pelo valor real, se tiver
-                    meta = metaValor,       // mesma coisa: pode vir do banco ou ViewModel
-                    metaObjetivo = metaObjetivo,
                     onNotificationClick = onShowRecompensa,
                     onLogoutClick = onLogout,
                     onNavigateInicio = { navController.navigate("home") },
@@ -261,6 +262,103 @@ fun MainScreen(
                 MetasScreen()
             }
 
+            composable("aporte") {
+                InserirAporte()
+            }
+
+
+        }
+    }
+}
+
+@Composable
+fun InserirAporte() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val db = remember { AppDatabase.getDatabase(context) }
+
+    var valorAporte by remember { mutableStateOf("") }
+    var mostrarAporteAtual by remember { mutableStateOf(false) }
+    var totalAportado by remember { mutableStateOf(0f) }
+
+    // Carregar total atual
+    LaunchedEffect(Unit) {
+        totalAportado = db.aporteDao().obterTotalAportado() ?: 0f
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Inserir Aporte", style = MaterialTheme.typography.headlineMedium)
+
+        Spacer(modifier = Modifier.height(24.dp))
+        Text("Valor do aporte", style = MaterialTheme.typography.labelLarge)
+        OutlinedTextField(
+            value = valorAporte,
+            onValueChange = { valorAporte = it },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = {
+                val valor = valorAporte.toFloatOrNull()
+                if (valor != null && valor > 0) {
+                    scope.launch {
+                        db.aporteDao().inserirAporte(AporteEntity(valor = valor))
+                        valorAporte = ""
+                        totalAportado = db.aporteDao().obterTotalAportado() ?: 0f
+                    }
+                    Toast.makeText(context, "Aporte inserido com sucesso!", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Inserir aporte")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { mostrarAporteAtual = !mostrarAporteAtual },
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
+        ) {
+            Text(if (mostrarAporteAtual) "Ocultar Aporte" else "Ver Aporte")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (mostrarAporteAtual) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFFFFF)),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text("Total aportado: R$ %.2f".format(totalAportado), style = MaterialTheme.typography.bodyLarge)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                db.aporteDao().deleteTodosAportes()
+                                totalAportado = 0f
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text("Excluir Aporte")
+                    }
+                }
+            }
         }
     }
 }
@@ -271,9 +369,6 @@ fun MainScreen(
 @Composable
 fun HomeScreen(
     userName: String,
-    totalAportado: Float,
-    meta: Float,
-    metaObjetivo: String,
     onNotificationClick: () -> Unit,
     onNavigateInicio: () -> Unit,
     onNavigateInserirAporte: () -> Unit,
@@ -281,46 +376,53 @@ fun HomeScreen(
     onNavigateMetas: () -> Unit,
     onLogoutClick: () -> Unit
 ) {
+    val context = LocalContext.current
+    val db = remember { AppDatabase.getDatabase(context) }
+
+    val metaState by db.metasDao().getMetaAtual().collectAsState(initial = null)
+    val totalAportado by produceState(initialValue = 0f) {
+        value = db.aporteDao().obterTotalAportado() ?: 0f
+    }
+
     val aporteDisplay = if (totalAportado <= 0f) "R$ 0,00" else "R$ %.2f".format(totalAportado)
-    val percentual = if (meta <= 0f) 0f else (totalAportado / meta).coerceIn(0f, 1f)
+    val percentual = if ((metaState?.valor ?: 0f) <= 0f) 0f else (totalAportado / (metaState?.valor ?: 1f)).coerceIn(0f, 1f)
 
     Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
-        ) {
-            Text(
-                "Total aportado",
-                style = MaterialTheme.typography.headlineSmall,
-                modifier = Modifier.padding(bottom = 8.dp)
-            )
-            Text(
-                aporteDisplay,
-                style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
-                fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(bottom = 24.dp)
-            )
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(
+            "Total aportado",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            aporteDisplay,
+            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
 
-            // Gráfico de pizza usando Canvas
         PieChart(percent = percentual)
 
+        Text(
+            text = "Meta atual: R$ %.2f".format(metaState?.valor ?: 0f),
+            style = MaterialTheme.typography.bodyLarge
+        )
+        if (!metaState?.objetivo.isNullOrBlank()) {
             Text(
-                text = "Meta atual: R$ %.2f".format(meta),
-                style = MaterialTheme.typography.bodyLarge
+                text = "objetivo: ${metaState?.objetivo}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 4.dp)
             )
-            if (metaObjetivo.isNotBlank()){
-                Text(
-                    text = "objetivo: $metaObjetivo",
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(top =4.dp)
-                )
-            }
         }
-
+    }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -760,8 +862,8 @@ fun MetasScreenPreview() {
 
 @Preview(showBackground = true)
 @Composable
-fun MetasScreenPreview() {
+fun InserirAporteScreenPreview() {
     InvestGamesTheme {
-        MetasScreen()
+        InserirAporte()
     }
 }

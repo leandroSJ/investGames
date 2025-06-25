@@ -11,4 +11,8 @@ interface AporteDao {
 
     @Query("SELECT SUM(valor) FROM aportes")
     suspend fun obterTotalAportado(): Float?
+
+    @Query("DELETE FROM aportes")
+    suspend fun deleteTodosAportes()
+
 }
