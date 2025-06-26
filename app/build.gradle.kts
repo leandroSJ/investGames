@@ -57,6 +57,7 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.datastore.preferences)
+    implementation(libs.protolite.well.known.types)
 
 
     ksp(libs.room.ksp)

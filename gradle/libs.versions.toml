@@ -13,6 +13,7 @@ ksp = "2.1.21-2.0.1"
 accompanist = "0.34.0"
 vico = "1.13.0"
 datastore = "1.0.0"
+protoliteWellKnownTypes = "18.0.1"
 
 
 
@@ -43,6 +44,7 @@ room-ksp = { group = "androidx.room", name = "room-compiler", version.ref = "roo
 room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
 accompanist-navigation-animation = { module = "com.google.accompanist:accompanist-navigation-animation", version.ref = "accompanist" }
 datastore-preferences = "androidx.datastore:datastore-preferences:1.0.0"
+protolite-well-known-types = { group = "com.google.firebase", name = "protolite-well-known-types", version.ref = "protoliteWellKnownTypes" }
 
 
 

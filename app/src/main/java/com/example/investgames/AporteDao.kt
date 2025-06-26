@@ -15,4 +15,8 @@ interface AporteDao {
     @Query("DELETE FROM aportes")
     suspend fun deleteTodosAportes()
 
+    @Query("SELECT * FROM aportes ORDER BY data DESC")
+    fun getTodosAportes(): Flow<List<AporteEntity>>
+
+
 }

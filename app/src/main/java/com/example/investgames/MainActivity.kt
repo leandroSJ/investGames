@@ -42,6 +42,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -52,6 +53,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -61,6 +63,10 @@ import com.example.investgames.*
 import com.example.investgames.data.MetaEntity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import java.text.SimpleDateFormat
+import androidx.compose.foundation.lazy.items
+import java.util.Date
+
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
@@ -173,6 +179,10 @@ fun MainScreen(
     val icons = listOf(Icons.Default.Home, Icons.Default.TrendingUp, Icons.Default.AttachMoney, Icons.Default.Flag)
     val labels = listOf("Início", "Inserir Aporte", "Histórico", "Metas")
 
+    var expanded by remember { mutableStateOf(false) }
+    var showDialog by remember { mutableStateOf(false) }
+    var showSobreDialog by remember { mutableStateOf(false) }
+
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -206,12 +216,38 @@ fun MainScreen(
                     IconButton(onClick = onShowRecompensa) {
                         Icon(Icons.Default.Notifications, contentDescription = "Notificações")
                     }
-                    Spacer(modifier = Modifier.width(8.dp))
 
                     IconButton(onClick = onLogout) {
                         Icon(Icons.AutoMirrored.Filled.ExitToApp, contentDescription = "Sair")
                     }
-                },
+
+                    Box {
+                        IconButton(onClick = { expanded = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "Mais opções")
+                        }
+
+                        DropdownMenu(
+                            expanded = expanded,
+                            onDismissRequest = { expanded = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Notas da versão") },
+                                onClick = {
+                                    expanded = false
+                                    showDialog = true
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Sobre o App") },
+                                onClick = {
+                                    expanded = false
+                                    showSobreDialog = true
+                                }
+                            )
+                        }
+                    }
+                }
+                ,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = MaterialTheme.colorScheme.onPrimary,
@@ -266,7 +302,213 @@ fun MainScreen(
                 InserirAporte()
             }
 
+            composable("historico") {
+                HistoricoAportesScreen(userName = userName)
+            }
 
+
+
+        }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Fechar")
+                }
+            },
+            title = { Text("Notas da versão: V0.2.2506-alpha\n") },
+            text = {
+                Column {
+                    Text("- Novo botão 'Notas da versão' \n")
+                    Text("- Novo botão 'Sobre o App' \n")
+                    Text("- Adicionado Histórico de aportes \n")
+                    Text("- Correções no layout da Meta \n")
+                    Text("- Atualização do gráfico em tempo real \n")
+
+                }
+            }
+        )
+    }
+    if (showSobreDialog) {
+        AlertDialog(
+            onDismissRequest = { showSobreDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showSobreDialog = false }) {
+                    Text("Fechar")
+                }
+            },
+            title = { Text("Sobre o InvestGames\n") },
+            text = {
+                Column {
+                    Text("- Versão: V0.2.2506-alpha.\n")
+                    Text("- Dev: Leandro de Jesus. \n")
+                    Text("- Objetivo: Acompanhar aportes financeiros e metas de forma gamificada. \n")
+                    Text("- Aviso: Este app não oferece recomendações financeiras. Use por sua conta e risco.\n")
+                }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalAnimationApi::class)
+@Composable
+fun LoginScreen(
+    innerPadding: PaddingValues = PaddingValues(0.dp),
+    onNavigateToRegister: () -> Unit = {},
+    onLoginSuccess: (String) -> Unit
+) {
+    var emailOrCpf by remember {mutableStateOf("")}
+    var password by remember {mutableStateOf("")}
+    var passwordVisible by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Logo InvestGames",
+            modifier = Modifier
+                .size(200.dp)
+                .padding(bottom = 16.dp)
+        )
+        Text(
+            text = "Login",
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        OutlinedTextField(
+            value = emailOrCpf,
+            onValueChange = {emailOrCpf = it},
+            label = {Text("E-mail ou CPF")},
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        OutlinedTextField(
+            value = password,
+            onValueChange = {password = it},
+            label = { Text("Senha")},
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                val image = if (passwordVisible)
+                    Icons.Default.Visibility
+                else Icons.Default.VisibilityOff
+
+                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                    Icon(
+                        imageVector = image,
+                        contentDescription = if (passwordVisible) "Esconder senha" else "Mostrar senha"
+                    )
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.height(32.dp))
+
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
+        val db = remember { AppDatabase.getDatabase(context) }
+        val sessionManager = remember { SessionManager(context) }
+        Button(
+            onClick = {
+                scope.launch {
+                    val user = db.userDao().login(emailOrCpf, password)
+                    if (user != null) {
+                        Toast.makeText(context, "Bem-vindo, ${user.name}", Toast.LENGTH_SHORT).show()
+                        onLoginSuccess(user.name)
+                    } else {
+                        Toast.makeText(context, "E-mail, CPF ou senha inválidos", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Entrar")
+        }
+        Text(
+            text = "Cadastre-se",
+            style = MaterialTheme.typography.bodyMedium,
+            color =  MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .padding(bottom = 32.dp)
+                .clickable{
+                    onNavigateToRegister()
+                }
+        )
+
+
+
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HomeScreen(
+    userName: String,
+    onNotificationClick: () -> Unit,
+    onNavigateInicio: () -> Unit,
+    onNavigateInserirAporte: () -> Unit,
+    onNavigateHistorico: () -> Unit,
+    onNavigateMetas: () -> Unit,
+    onLogoutClick: () -> Unit
+) {
+    val context = LocalContext.current
+    val db = remember { AppDatabase.getDatabase(context) }
+
+    val metaState by db.metasDao().getMetaAtual().collectAsState(initial = null)
+    val totalAportado by produceState(initialValue = 0f) {
+        value = db.aporteDao().obterTotalAportado() ?: 0f
+    }
+
+    val aporteDisplay = if (totalAportado <= 0f) "R$ 0,00" else "R$ %.2f".format(totalAportado)
+    val percentual = if ((metaState?.valor ?: 0f) <= 0f) 0f else (totalAportado / (metaState?.valor ?: 1f)).coerceIn(0f, 1f)
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Text(
+            "Total aportado",
+            style = MaterialTheme.typography.headlineSmall,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            aporteDisplay,
+            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(bottom = 24.dp)
+        )
+
+        PieChart(percent = percentual)
+
+        Text(
+            text = "Meta atual: R$ %.2f".format(metaState?.valor ?: 0f),
+            style = MaterialTheme.typography.bodyLarge
+        )
+        if (!metaState?.objetivo.isNullOrBlank()) {
+            Text(
+                text = "Objetivo: ${metaState?.objetivo}",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 4.dp)
+            )
         }
     }
 }
@@ -363,65 +605,94 @@ fun InserirAporte() {
     }
 }
 
-
-
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(
-    userName: String,
-    onNotificationClick: () -> Unit,
-    onNavigateInicio: () -> Unit,
-    onNavigateInserirAporte: () -> Unit,
-    onNavigateHistorico: () -> Unit,
-    onNavigateMetas: () -> Unit,
-    onLogoutClick: () -> Unit
-) {
+fun HistoricoAportesScreen(userName: String) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val db = remember { AppDatabase.getDatabase(context) }
 
-    val metaState by db.metasDao().getMetaAtual().collectAsState(initial = null)
-    val totalAportado by produceState(initialValue = 0f) {
-        value = db.aporteDao().obterTotalAportado() ?: 0f
-    }
+    var listaAportes by remember { mutableStateOf(emptyList<AporteEntity>()) }
 
-    val aporteDisplay = if (totalAportado <= 0f) "R$ 0,00" else "R$ %.2f".format(totalAportado)
-    val percentual = if ((metaState?.valor ?: 0f) <= 0f) 0f else (totalAportado / (metaState?.valor ?: 1f)).coerceIn(0f, 1f)
+    // Carrega todos os aportes assim que a tela for aberta
+    LaunchedEffect(Unit) {
+        db.aporteDao().getTodosAportes().collect { aportes ->
+            listaAportes = aportes
+        }
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Top
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            "Total aportado",
-            style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-        Text(
-            aporteDisplay,
-            style = MaterialTheme.typography.headlineMedium.copy(fontSize = 32.sp),
-            fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.padding(bottom = 24.dp)
-        )
+        Text("Histórico de Aportes", style = MaterialTheme.typography.headlineMedium)
 
-        PieChart(percent = percentual)
+        Spacer(modifier = Modifier.height(24.dp))
 
-        Text(
-            text = "Meta atual: R$ %.2f".format(metaState?.valor ?: 0f),
-            style = MaterialTheme.typography.bodyLarge
-        )
-        if (!metaState?.objetivo.isNullOrBlank()) {
-            Text(
-                text = "objetivo: ${metaState?.objetivo}",
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+        if (listaAportes.isEmpty()) {
+            Text("Nenhum aporte registrado ainda.", style = MaterialTheme.typography.bodyMedium)
+        } else {
+            LazyColumn {
+                items(listaAportes) { aporte ->
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 6.dp),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(12.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AttachMoney,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Data: ${SimpleDateFormat("dd/MM/yyyy").format(Date(aporte.data))}",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text("Usuário: $userName", style = MaterialTheme.typography.bodySmall)
+                                Text(
+                                    "Valor: R$ %.2f".format(aporte.valor),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = {
+                            scope.launch {
+                                db.aporteDao().deleteTodosAportes()
+                                listaAportes = emptyList()
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                    ) {
+                        Text("Excluir Todos os Aportes")
+                    }
+                }
+            }
         }
     }
 }
+
+
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -623,114 +894,11 @@ fun MetasScreen() {
                 }
             }
         }
-
-
-
 }
 
 
 
-@OptIn(ExperimentalAnimationApi::class)
-@Composable
-fun LoginScreen(
-    innerPadding: PaddingValues = PaddingValues(0.dp),
-    onNavigateToRegister: () -> Unit = {},
-    onLoginSuccess: (String) -> Unit
-) {
-    var emailOrCpf by remember {mutableStateOf("")}
-    var password by remember {mutableStateOf("")}
-    var passwordVisible by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.logo),
-            contentDescription = "Logo InvestGames",
-            modifier = Modifier
-                .size(200.dp)
-                .padding(bottom = 16.dp)
-        )
-        Text(
-            text = "Login",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        OutlinedTextField(
-            value = emailOrCpf,
-            onValueChange = {emailOrCpf = it},
-            label = {Text("E-mail ou CPF")},
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = password,
-            onValueChange = {password = it},
-            label = { Text("Senha")},
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                val image = if (passwordVisible)
-                    Icons.Default.Visibility
-                else Icons.Default.VisibilityOff
-
-                IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                    Icon(
-                        imageVector = image,
-                        contentDescription = if (passwordVisible) "Esconder senha" else "Mostrar senha"
-                    )
-                }
-            }
-        )
-
-        Spacer(modifier = Modifier.height(32.dp))
-
-        val context = LocalContext.current
-        val scope = rememberCoroutineScope()
-        val db = remember { AppDatabase.getDatabase(context) }
-        val sessionManager = remember { SessionManager(context) }
-        Button(
-            onClick = {
-                scope.launch {
-                    val user = db.userDao().login(emailOrCpf, password)
-                    if (user != null) {
-                        Toast.makeText(context, "Bem-vindo, ${user.name}", Toast.LENGTH_SHORT).show()
-                        onLoginSuccess(user.name)
-                    } else {
-                        Toast.makeText(context, "E-mail, CPF ou senha inválidos", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            },
-                modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Entrar")
-                }
-        Text(
-            text = "Cadastre-se",
-            style = MaterialTheme.typography.bodyMedium,
-            color =  MaterialTheme.colorScheme.primary,
-            modifier = Modifier
-                .padding(bottom = 32.dp)
-                .clickable{
-                    onNavigateToRegister()
-                }
-        )
-
-
-
-    }
-}
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -846,7 +1014,10 @@ fun isCpfValid(cpf: String): Boolean {
 
     return true
 }
-/*
+
+
+
+
 @Preview(showBackground = true)
 @Composable
 fun MetasScreenPreview() {
@@ -856,14 +1027,5 @@ fun MetasScreenPreview() {
             onLogout = {},
             onShowRecompensa = {}
         )
-    }
-}
-*/
-
-@Preview(showBackground = true)
-@Composable
-fun InserirAporteScreenPreview() {
-    InvestGamesTheme {
-        InserirAporte()
     }
 }
