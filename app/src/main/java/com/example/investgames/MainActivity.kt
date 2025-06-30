@@ -78,6 +78,9 @@ import com.example.investgames.data.Recompensa
 import com.example.investgames.data.recompensas
 import java.util.Date
 import android.Manifest
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.text.font.FontStyle
 import com.example.investgames.data.checkRecompensas
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -178,6 +181,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+
                     }
                 }
             }
@@ -255,6 +259,7 @@ fun MainScreen(
     var expanded by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
     var showSobreDialog by remember { mutableStateOf(false) }
+    var showDicasDialog by remember { mutableStateOf(false) }
 
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val context = LocalContext.current
@@ -317,6 +322,15 @@ fun MainScreen(
                                     showSobreDialog = true
                                 }
                             )
+
+                            DropdownMenuItem(
+                                text = { Text("Dicas de Investimento") },
+                                onClick = {
+                                    expanded = false
+                                    showDicasDialog = true
+                                }
+                            )
+
                         }
                     }
                 }
@@ -362,7 +376,9 @@ fun MainScreen(
                     onNavigateInicio = { navController.navigate("home") },
                     onNavigateInserirAporte = { navController.navigate("aporte") },
                     onNavigateHistorico = { navController.navigate("historico") },
-                    onNavigateMetas = { navController.navigate("metas") }
+                    onNavigateMetas = { navController.navigate("metas") },
+                    onNavigateDicas = { navController.navigate("dicas") }
+
                 )
             }
 
@@ -425,6 +441,127 @@ fun MainScreen(
             }
         )
     }
+
+    if (showDicasDialog) {
+        AlertDialog(
+            onDismissRequest = { showDicasDialog = false },
+            confirmButton = {
+                TextButton(onClick = { showDicasDialog = false }) {
+                    Text("Fechar")
+                }
+            },
+            title = {
+                Text("📘 Plano de Sobrevivência Financeira em Tempos de Crise")
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        "OBS: Nada disso aqui é garantia de ganho, porém eu, Leandro, vou fazer dessa forma. Cada um faz por sua conta e risco.",
+                        style = MaterialTheme.typography.bodySmall,
+                        fontStyle = FontStyle.Italic
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text(
+                        "Estamos vivendo o que pode ser o prelúdio de uma das maiores rupturas geopolíticas da história moderna. As peças estão se movendo rapidamente:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Column {
+                        Text("• Tensões militares entre Rússia, China, Irã, Israel, EUA e OTAN.")
+                        Text("• Conflitos com choques econômicos: sanções, bloqueios e sabotagens.")
+                        Text("• Manipulação de preços de commodities como arma econômica.")
+                        Text("• Inflação global descontrolada e instabilidade monetária.")
+                        Text("• EUA podem surgir como “salvador mundial” em cenário forjado.")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    Text("🛡️ Fase 1 – Construção da Linha de Defesa: Reserva de Guerra (0 a 8 meses)",
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("🎯 Objetivo: Garantir que você não será forçado a vender ativos no pior momento.")
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("🔒 Meta de Reserva: De R$ 3.000 a R$ 5.000")
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("🔑 Onde guardar:", fontWeight = FontWeight.SemiBold)
+                    Column {
+                        Text("• Tesouro Selic")
+                        Text("• Conta remunerada com liquidez diária (ex: PicPay, Nubank, Itaú)")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("📌 Por quê? Acesso rápido ao dinheiro em caso de guerra, hiperinflação ou lockdown.")
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("🔥 Fase 2 – Blindagem contra Inflação e Colapsos Econômicos (8 a 18 meses)",
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("🎯 Objetivo: Proteger seu poder de compra com ativos que sobem em crises.")
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("💰 Alocação recomendada:", fontWeight = FontWeight.SemiBold)
+                    Column {
+                        Text("• Ouro (GOLD11 ou fundos lastreados) – 30%")
+                        Text("• Tesouro IPCA+ (2029 ou 2035) – 30%")
+                        Text("• Fundos/ETFs de Commodities – 20%")
+                        Text("• Liquidez (caixa extra) – 20%")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("🔎 Observação: Dólar pode explodir. Considere ativos dolarizados (ex: IVVB11).")
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("🚀 Fase 3 – Ataque Estratégico: Comprar Ativos em Pânico (2026 em diante)",
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("🎯 Objetivo: Enquanto o mundo está com medo, você vai às compras.")
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("🛡️ Regras de ouro:", fontWeight = FontWeight.SemiBold)
+                    Column {
+                        Text("• Comprar empresas resilientes (energia, saneamento, exportadoras).")
+                        Text("• Evitar varejo alimentar tradicional (histórico de falências).")
+                        Text("• Varejo só se for Assaí ou Carrefour, no máximo 5% do portfólio.")
+                        Text("• ETFs internacionais quando o dólar aliviar.")
+                        Text("• FIIs com grandes descontos.")
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("🎯 Fase 4 – Construção da Bola de Neve Patrimonial (2027 em diante)",
+                        style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("🎯 Objetivo: Sair da linha de pobreza patrimonial e acumular ativos.")
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text("📈 Seu foco a partir daqui:", fontWeight = FontWeight.SemiBold)
+                    Column {
+                        Text("• Manter aportes mensais.")
+                        Text("• Reinvestir todos os dividendos.")
+                        Text("• Ver quedas como oportunidades.")
+                        Text("• Estudar temas avançados:")
+                        Text("    - Internacionalização de patrimônio")
+                        Text("    - Moedas fortes e criptomoedas")
+                        Text("    - Fundos estruturados e alternativos")
+                    }
+                }
+            }
+        )
+    }
+
 }
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -538,7 +675,8 @@ fun HomeScreen(
     onNavigateInserirAporte: () -> Unit,
     onNavigateHistorico: () -> Unit,
     onNavigateMetas: () -> Unit,
-    onLogoutClick: () -> Unit
+    onLogoutClick: () -> Unit,
+    onNavigateDicas: () -> Unit
 ) {
     val context = LocalContext.current
     val db = remember { AppDatabase.getDatabase(context) }
@@ -1136,6 +1274,7 @@ fun isCpfValid(cpf: String): Boolean {
 
     return true
 }
+
 
 
 
