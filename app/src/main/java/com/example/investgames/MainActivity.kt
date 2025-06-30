@@ -1,5 +1,10 @@
 package com.example.investgames
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -65,18 +70,32 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import java.text.SimpleDateFormat
 import androidx.compose.foundation.lazy.items
+import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import com.example.investgames.data.Recompensa
+import com.example.investgames.data.recompensas
 import java.util.Date
+import android.Manifest
+import com.example.investgames.data.checkRecompensas
+import kotlinx.coroutines.flow.firstOrNull
 
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalAnimationApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        criarCanalNotificacao(applicationContext)
+        solicitarPermissaoNotificacao()
         setContent {
             InvestGamesTheme {
                 val navController = rememberNavController()
                 val context = LocalContext.current
                 val sessionManager = remember { SessionManager(context) }
+                val prefs = context.getSharedPreferences("recompensas", Context.MODE_PRIVATE)
+                prefs.edit().clear().apply()
+
 
                 // ✅ Verifica sessão ao abrir o app
                 LaunchedEffect(Unit) {
@@ -160,11 +179,65 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                     }
-                    }
                 }
             }
         }
+
     }
+    private fun solicitarPermissaoNotificacao() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+
+                ActivityCompat.requestPermissions(
+                    this,
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    1001
+                )
+            }
+        }
+    }
+}
+
+fun criarCanalNotificacao(context: Context) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        val nome = "Recompensas"
+        val descricao = "Notificações das recompensas de aportes"
+        val importancia = NotificationManager.IMPORTANCE_DEFAULT
+        val canal = NotificationChannel("recompensa_channel", nome, importancia).apply {
+            description = descricao
+        }
+        val manager: NotificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        manager.createNotificationChannel(canal)
+    }
+}
+
+fun enviarNotificacao(context: Context, recompensa: Recompensa) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+        != PackageManager.PERMISSION_GRANTED
+    ) {
+        // Sem permissão, não pode enviar a notificação
+        return
+    }
+
+    val builder = NotificationCompat.Builder(context, "recompensa_channel")
+        .setSmallIcon(android.R.drawable.ic_dialog_info) // Substitua pelo seu ic_reward se desejar
+        .setContentTitle(recompensa.titulo)
+        .setContentText(recompensa.mensagem)
+        .setStyle(NotificationCompat.BigTextStyle().bigText("${recompensa.mensagem}\n\n${recompensa.recompensa}"))
+        .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+
+    with(NotificationManagerCompat.from(context)) {
+        notify((1000..9999).random(), builder.build())
+    }
+}
+
+
+
+
+
 
 
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3Api::class)
@@ -319,14 +392,15 @@ fun MainScreen(
                     Text("Fechar")
                 }
             },
-            title = { Text("Notas da versão: V0.2.2506-alpha\n") },
+            title = { Text("Notas da versão: V2.2.0-beta\n") },
             text = {
                 Column {
-                    Text("- Novo botão 'Notas da versão' \n")
-                    Text("- Novo botão 'Sobre o App' \n")
-                    Text("- Adicionado Histórico de aportes \n")
-                    Text("- Correções no layout da Meta \n")
-                    Text("- Atualização do gráfico em tempo real \n")
+                    Text("- Adicionado sistema de recompensas' \n")
+                    Text("- Adicionado notificações' \n")
+                    Text("- Adicionado Botão resetar recompensas \n")
+                    Text("- Correções de Bugs \n")
+                    Text("- OBS: Essa é a ultima versao \n")
+                    Text("- Estarei focando em outros projetos... \n")
 
                 }
             }
@@ -343,7 +417,7 @@ fun MainScreen(
             title = { Text("Sobre o InvestGames\n") },
             text = {
                 Column {
-                    Text("- Versão: V0.2.2506-alpha.\n")
+                    Text("- Versão: V2.2.0-beta.\n")
                     Text("- Dev: Leandro de Jesus. \n")
                     Text("- Objetivo: Acompanhar aportes financeiros e metas de forma gamificada. \n")
                     Text("- Aviso: Este app não oferece recomendações financeiras. Use por sua conta e risco.\n")
@@ -554,7 +628,42 @@ fun InserirAporte() {
                         db.aporteDao().inserirAporte(AporteEntity(valor = valor))
                         valorAporte = ""
                         totalAportado = db.aporteDao().obterTotalAportado() ?: 0f
+
+                        // ✅ Obtém meta atual do banco
+                        val meta = db.metasDao().getMetaAtual().firstOrNull()
+                        val valorMeta = meta?.valor ?: 0f
+
+                        // ✅ 1. Verifica e desbloqueia recompensas com base no total acumulado
+                        checkRecompensas(
+                            context = context,
+                            totalAportado = totalAportado,
+                            valorMeta = valorMeta
+                        ) { recompensa ->
+                            if (recompensa.id == 1 || recompensa.id == 12) {
+                                enviarNotificacao(context, recompensa)
+                            }
+                        }
+
+                        // ✅ 2. Notificação baseada no valor do aporte atual (pode repetir)
+                        val recompensaNotificacao = when {
+                            valor in 20f..100f -> recompensas.first { it.id == 2 }
+                            valor in 200f..300f -> recompensas.first { it.id == 3 }
+                            valor > 350f && valor < 400f -> recompensas.first { it.id == 4 }
+                            valor >= 400f && valor < 450f -> recompensas.first { it.id == 5 }
+                            valor == 450f -> recompensas.first { it.id == 6 }
+                            valor == 500f -> recompensas.first { it.id == 7 }
+                            valor == 550f -> recompensas.first { it.id == 8 }
+                            valor == 600f -> recompensas.first { it.id == 9 }
+                            valor == 650f -> recompensas.first { it.id == 10 }
+                            valor >= 700f -> recompensas.first { it.id == 11 }
+                            else -> null
+                        }
+
+                        recompensaNotificacao?.let {
+                            enviarNotificacao(context, it) // sempre que valor bater
+                        }
                     }
+
                     Toast.makeText(context, "Aporte inserido com sucesso!", Toast.LENGTH_SHORT).show()
                 }
             },
@@ -562,6 +671,7 @@ fun InserirAporte() {
         ) {
             Text("Inserir aporte")
         }
+
 
         Spacer(modifier = Modifier.height(16.dp))
         Button(
@@ -602,6 +712,18 @@ fun InserirAporte() {
                 }
             }
         }
+        Button(
+            onClick = {
+            val prefs = context.getSharedPreferences("recompensas", Context.MODE_PRIVATE)
+            prefs.edit().clear().apply()
+            Toast.makeText(context, "Recompensas resetadas!", Toast.LENGTH_SHORT).show()
+        },modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
+            ){
+            Text("Resetar Recompensas")
+        }
+
     }
 }
 
@@ -656,7 +778,7 @@ fun HistoricoAportesScreen(userName: String) {
                             Spacer(modifier = Modifier.width(12.dp))
                             Column {
                                 Text(
-                                    text = "Data: ${SimpleDateFormat("dd/MM/yyyy").format(Date(aporte.data))}",
+                                    text = "Data: ${SimpleDateFormat("dd/MM/yyyy HH:mm").format(Date(aporte.data))}",
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Text("Usuário: $userName", style = MaterialTheme.typography.bodySmall)
@@ -712,7 +834,7 @@ fun MetasScreen() {
     val opcoes = listOf("Carro", "Reserva de emergência", "Viagens", "Outros")
     val icones = listOf(Icons.Default.DirectionsCar, Icons.Default.Savings, Icons.Default.Flight, Icons.Default.Edit)
 
-        // Carregar meta atual do banco
+    // Carregar meta atual do banco
     LaunchedEffect(Unit) {
         db.metasDao().getMetaAtual().collect { meta ->
             metaAtual = meta
@@ -727,173 +849,173 @@ fun MetasScreen() {
     }
 
 
-        Column(
-            modifier = Modifier
-                .padding(10.dp)
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            Text("Definir Metas", style = MaterialTheme.typography.headlineMedium)
-        }
-        Column(
-            modifier = Modifier
-                .padding(24.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.Start
-        ) {
-            Spacer(modifier = Modifier.height(24.dp))
-            Text("Valor da meta R$", style = MaterialTheme.typography.labelLarge)
-            OutlinedTextField(
-                value = valorMeta,
-                onValueChange = { valorMeta = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Ex: 1000") },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            if (mostrarMetaAtual) {
-                if (metaAtual != null) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    Column(
+        modifier = Modifier
+            .padding(10.dp)
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ){
+        Text("Definir Metas", style = MaterialTheme.typography.headlineMedium)
+    }
+    Column(
+        modifier = Modifier
+            .padding(24.dp)
+            .fillMaxSize(),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.Start
+    ) {
+        Spacer(modifier = Modifier.height(24.dp))
+        Text("Valor da meta R$", style = MaterialTheme.typography.labelLarge)
+        OutlinedTextField(
+            value = valorMeta,
+            onValueChange = { valorMeta = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text("Ex: 1000") },
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+        if (mostrarMetaAtual) {
+            if (metaAtual != null) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.Start
                     ) {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.Start
+                        Text("Meta Atual", style = MaterialTheme.typography.titleMedium)
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("Valor: R$ %.2f".format(metaAtual!!.valor), style = MaterialTheme.typography.bodyLarge)
+                        Text("Objetivo: ${metaAtual!!.objetivo}", style = MaterialTheme.typography.bodyLarge)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = {
+                                // Excluir meta e objetivo no banco
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    db.metasDao().deleteTodasMetas()
+                                }
+                                // Limpar estado local e esconder card
+                                metaAtual = null
+                                valorMeta = ""
+                                objetivoSelecionado = ""
+                                mostrarMetaAtual = false
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                         ) {
-                            Text("Meta Atual", style = MaterialTheme.typography.titleMedium)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text("Valor: R$ %.2f".format(metaAtual!!.valor), style = MaterialTheme.typography.bodyLarge)
-                            Text("Objetivo: ${metaAtual!!.objetivo}", style = MaterialTheme.typography.bodyLarge)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = {
-                                    // Excluir meta e objetivo no banco
-                                    CoroutineScope(Dispatchers.IO).launch {
-                                        db.metasDao().deleteTodasMetas()
-                                    }
-                                    // Limpar estado local e esconder card
-                                    metaAtual = null
-                                    valorMeta = ""
-                                    objetivoSelecionado = ""
-                                    mostrarMetaAtual = false
-                                },
-                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
-                            ) {
-                                Text("Excluir Meta")
-                            }
+                            Text("Excluir Meta")
                         }
+                    }
+                }
+            } else {
+                Text("Nenhuma meta definida", style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+        if (!mostrarMetaAtual) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text("Qual seu objetivo?", style = MaterialTheme.typography.labelLarge)
+            opcoes.forEachIndexed { i, item ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = objetivoSelecionado == item,
+                        onCheckedChange = {
+                            objetivoSelecionado = if (it) item else ""
+                        }
+                    )
+                    Icon(icones[i], contentDescription = item, modifier = Modifier.size(20.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(item)
+                }
+            }
+
+            if (objetivoSelecionado == "Outros") {
+                OutlinedTextField(
+                    value = outroObjetivo,
+                    onValueChange = { outroObjetivo = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Descreva seu objetivo") }
+                )
+            }
+        }
+
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Button(
+            onClick = {
+                val valor = valorMeta.toFloatOrNull() ?: 0f
+                val objetivo = if (objetivoSelecionado == "Outros") outroObjetivo.trim() else objetivoSelecionado
+
+                if (valor > 0f && objetivo.isNotBlank()) {
+                    val novaMeta = MetaEntity(valor = valor, objetivo = objetivo)
+
+                    scope.launch {
+                        db.metasDao().insertMeta(novaMeta)
+
+                        // Atualizar estado local para refletir a nova meta salva
+                        metaAtual = novaMeta
+                        valorMeta = novaMeta.valor.toString()
+                        objetivoSelecionado = novaMeta.objetivo
+
+                        // Fecha o card da meta atual
+                        mostrarMetaAtual = false
+
+                        // Opcional: mostrar uma mensagem toast confirmando o salvamento
+                        Toast.makeText(context, "Meta salva com sucesso!", Toast.LENGTH_SHORT).show()
                     }
                 } else {
-                    Text("Nenhuma meta definida", style = MaterialTheme.typography.bodyLarge)
+                    Toast.makeText(context, "Preencha valor e objetivo corretamente", Toast.LENGTH_SHORT).show()
                 }
-            }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Definir nova meta")
+        }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            if (!mostrarMetaAtual) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("Qual seu objetivo?", style = MaterialTheme.typography.labelLarge)
-                opcoes.forEachIndexed { i, item ->
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = objetivoSelecionado == item,
-                            onCheckedChange = {
-                                objetivoSelecionado = if (it) item else ""
-                            }
-                        )
-                        Icon(icones[i], contentDescription = item, modifier = Modifier.size(20.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(item)
-                    }
-                }
+        // Botão para mostrar/esconder o card da meta atual
 
-                if (objetivoSelecionado == "Outros") {
-                    OutlinedTextField(
-                        value = outroObjetivo,
-                        onValueChange = { outroObjetivo = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Descreva seu objetivo") }
-                    )
-                }
-            }
+        Button(onClick = { mostrarMetaAtual = !mostrarMetaAtual },
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally)
+        ) {
+            Text(if (mostrarMetaAtual) "Ocultar Meta Atual" else "Ver Meta Atual")
+        }
 
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    val valor = valorMeta.toFloatOrNull() ?: 0f
-                    val objetivo = if (objetivoSelecionado == "Outros") outroObjetivo.trim() else objetivoSelecionado
-
-                    if (valor > 0f && objetivo.isNotBlank()) {
-                        val novaMeta = MetaEntity(valor = valor, objetivo = objetivo)
-
-                        scope.launch {
-                            db.metasDao().insertMeta(novaMeta)
-
-                            // Atualizar estado local para refletir a nova meta salva
-                            metaAtual = novaMeta
-                            valorMeta = novaMeta.valor.toString()
-                            objetivoSelecionado = novaMeta.objetivo
-
-                            // Fecha o card da meta atual
-                            mostrarMetaAtual = false
-
-                            // Opcional: mostrar uma mensagem toast confirmando o salvamento
-                            Toast.makeText(context, "Meta salva com sucesso!", Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        Toast.makeText(context, "Preencha valor e objetivo corretamente", Toast.LENGTH_SHORT).show()
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Definir nova meta")
-            }
-
-            // Botão para mostrar/esconder o card da meta atual
-
-            Button(onClick = { mostrarMetaAtual = !mostrarMetaAtual },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.CenterHorizontally)
-                ) {
-                Text(if (mostrarMetaAtual) "Ocultar Meta Atual" else "Ver Meta Atual")
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
 
 
 
 
+        Spacer(modifier = Modifier.height(32.dp))
+
+        if (mostrarCardRecompensa) {
             Spacer(modifier = Modifier.height(32.dp))
-
-            if (mostrarCardRecompensa) {
-                Spacer(modifier = Modifier.height(32.dp))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-                ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text("Cadastrar Recompensa", style = MaterialTheme.typography.titleMedium)
-                        OutlinedTextField(
-                            value = "",
-                            onValueChange = {},
-                            label = { Text("Descrição da recompensa") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Button(onClick = { mostrarCardRecompensa = false }) {
-                            Text("Salvar")
-                        }
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Text("Cadastrar Recompensa", style = MaterialTheme.typography.titleMedium)
+                    OutlinedTextField(
+                        value = "",
+                        onValueChange = {},
+                        label = { Text("Descrição da recompensa") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = { mostrarCardRecompensa = false }) {
+                        Text("Salvar")
                     }
                 }
             }
         }
+    }
 }
 
 

@@ -15,4 +15,7 @@ interface MetaDao {
 
     @Query("DELETE FROM metas")
     suspend fun deleteTodasMetas()
+
+    @Query("SELECT * FROM metas ORDER BY id DESC LIMIT 1")
+    suspend fun getMetaAtualSimples(): MetaEntity?
 }
