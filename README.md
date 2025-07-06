@@ -39,10 +39,10 @@ Abaixo algumas imagens do projeto em funcionamento (os caminhos das imagens pode
 <img src="Metas.jpeg" alt="Tela de Login" width="50%"/>
 
 ### Notas da Versão
-<img src="NotasVersao.jpeg" alt="Tela de Login" width="50%"/>
+<img src="Notasversao.jpeg" alt="Tela de Login" width="50%"/>
 
 ### ℹSobre o App
-<img src="sobre.jpeg" alt="Tela de Login" width="50%"/>
+<img src="Sobre.jpeg" alt="Tela de Login" width="50%"/>
 
 ---
 
