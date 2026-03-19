@@ -1,8 +1,8 @@
 # 📈 InvestGames
 
-**Aplicativo pessoal para organizar aportes e transformar o hábito de investir em algo mais leve e motivador.**
+** Testando Projeto usando 100% de IA, objetivo: organizar aportes e transformar o hábito de investir em algo mais leve e motivador.**
 
-> Criei esse app com o objetivo de começar a investir com mais consistência. A ideia foi unir metas financeiras com um sistema de recompensas, tornando o processo mais divertido e menos mecânico.
+> A ideia foi unir metas financeiras com um sistema de recompensas, tornando o processo mais divertido e menos mecânico.
 
 ---
 
@@ -18,7 +18,7 @@
 
 ---
 
-## 📷 Galeria de Telas
+##  Galeria de Telas
 
 Abaixo algumas imagens do projeto em funcionamento (os caminhos das imagens podem ser ajustados):
 
@@ -57,32 +57,32 @@ Abaixo algumas imagens do projeto em funcionamento (os caminhos das imagens pode
 
 ---
 
-## 🔐 Login e segurança
+## Login e segurança
 
 - Login com CPF, e-mail e senha  
 - Sessão salva de forma automática após o primeiro login, 
 
 ---
 
-## 🎁 Recompensas e Metas
+##  Recompensas e Metas
 
 Você pode definir metas como:
 
-- 🚗 Comprar um carro  
-- 💰 Montar uma reserva de emergência  
-- ✈️ Fazer uma viagem  
-- 📦 Qualquer outro objetivo que quiser
+- Comprar um carro  
+- Montar uma reserva de emergência  
+- Fazer uma viagem  
+- Qualquer outro objetivo que quiser
 
 A cada avanço, o app libera pop-up com pequenas recompensas como forma de reconhecimento pelo progresso.
 
 ---
 
-## 👨‍💻 Sobre o projeto
+## Sobre o projeto
 
 uso de 100% de IA não tive esforço algum apenas estava testando, desenvolvido no tempo livre.
 
 ---
 
-## 📄 Licença
+## Licença
 
 Licenciado sob a **MIT License** – veja o arquivo [LICENSE](LICENSE) para mais detalhes.
