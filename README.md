@@ -79,8 +79,7 @@ A cada avanço, o app libera pop-up com pequenas recompensas como forma de recon
 
 ## 👨‍💻 Sobre o projeto
 
-Esse é um projeto pessoal, desenvolvido no tempo livre. A motivação principal foi criar algo útil pra mim mesmo, com intuito de me motivar a cada vez que eu conseguir inserir um novo aporte financeiro.
-Não pretendo dar continuidade a este projeto visto que atingir o objetivo principal a qual eu mesmo havia proposto, e meu foco não é desenvolvimento android/mobile.
+uso de 100% de IA não tive esforço algum apenas estava testando, desenvolvido no tempo livre.
 
 ---
 
