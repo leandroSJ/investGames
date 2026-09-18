@@ -1,88 +1,56 @@
 # 📈 InvestGames
 
-** Testando Projeto usando 100% de IA, objetivo: organizar aportes e transformar o hábito de investir em algo mais leve e motivador.**
+Aplicativo Android experimental para organizar aportes financeiros e transformar o acompanhamento de metas em uma experiência mais visual e motivadora.
 
-> A ideia foi unir metas financeiras com um sistema de recompensas, tornando o processo mais divertido e menos mecânico.
+> O projeto explora gamificação aplicada ao hábito de investir, combinando metas, histórico, gráficos e recompensas.
 
----
+## ✨ Funcionalidades
 
-##  O que o app faz?
+- Registro de aportes
+- Acompanhamento do total investido
+- Progresso em relação às metas
+- Histórico de aportes
+- Gráficos de evolução
+- Recompensas por progresso
+- Notificações mensais
+- Armazenamento local dos dados
 
-- Ao registrar um aporte Permite acompanhar aportes financeiros que você fez em alguma instituição de forma simples  
-- Mostra o total aportado e o progresso em relação à sua meta  
-- Desbloqueia pequenas recompensas a cada passo dado  
-- Exibe um histórico de aportes para acompanhar sua evolução  
-- Oferece gráficos para visualização clara do progresso  
-- Notifica mensalmente com mensagens motivacionais  
-- Armazena tudo localmente, com segurança e privacidade  
+## 🖼️ Galeria
 
----
-
-##  Galeria de Telas
-
-Abaixo algumas imagens do projeto em funcionamento (os caminhos das imagens podem ser ajustados):
-
-### Tela de Login
-<img src="login.jpeg" alt="Tela de Login" width="50%"/>
+### Login
+<img src="login.jpeg" alt="Tela de login" width="50%"/>
 
 ### Dashboard
-<img src="Inicio.jpeg" alt="Tela de Login" width="50%"/>
+<img src="Inicio.jpeg" alt="Dashboard" width="50%"/>
 
-### Inserir Aporte
-<img src="InserirAporte.jpeg" alt="Tela de Login" width="50%"/>
+### Inserir aporte
+<img src="InserirAporte.jpeg" alt="Inserir aporte" width="50%"/>
 
-
-### Histórico de Aportes
-<img src="Historico.jpeg" alt="Tela de Login" width="50%"/>
+### Histórico
+<img src="Historico.jpeg" alt="Histórico de aportes" width="50%"/>
 
 ### Metas
-<img src="Metas.jpeg" alt="Tela de Login" width="50%"/>
+<img src="Metas.jpeg" alt="Metas" width="50%"/>
 
-### Notas da Versão
-<img src="Notasversao.jpeg" alt="Tela de Login" width="50%"/>
+## 🧰 Tecnologias
 
-### ℹSobre o App
-<img src="Sobre.jpeg" alt="Tela de Login" width="50%"/>
+- Kotlin
+- Jetpack Compose
+- Room / SQLite
+- Navigation Compose
+- ViewModel + LiveData
+- Material 3
 
----
+## 🎯 Sobre o projeto
 
-## Tecnologias e ferramentas usadas
+O InvestGames foi criado como um **experimento de desenvolvimento assistido por IA**, com foco em avaliar como essas ferramentas podem acelerar prototipação, estruturação de telas e implementação de funcionalidades.
 
-- **Kotlin** com **Jetpack Compose**  
-- Banco de dados local com **Room (SQLite)**  
-- Navegação usando **Navigation Compose**  
-- **ViewModel + LiveData**  
-- Design inspirado no **Material 3**  
-- Android Studio (versão Giraffe ou Koala)  
+O projeto é mantido como laboratório de aprendizado e experimentação, não como principal referência do meu portfólio técnico.
 
----
+## 🔐 Segurança
 
-## Login e segurança
+Arquivos locais, chaves de assinatura, senhas e credenciais não devem ser versionados. Utilize arquivos locais ignorados pelo Git e variáveis/configurações externas sempre que necessário.
 
-- Login com CPF, e-mail e senha  
-- Sessão salva de forma automática após o primeiro login, 
+## 📝 Licença
 
----
-
-##  Recompensas e Metas
-
-Você pode definir metas como:
-
-- Comprar um carro  
-- Montar uma reserva de emergência  
-- Fazer uma viagem  
-- Qualquer outro objetivo que quiser
-
-A cada avanço, o app libera pop-up com pequenas recompensas como forma de reconhecimento pelo progresso.
-
----
-
-## Sobre o projeto
-
-uso de 100% de IA não tive esforço algum apenas estava testando, desenvolvido no tempo livre.
-
----
-
-## Licença
-
-Licenciado sob a **MIT License** – veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Licenciado sob a **MIT License**. Consulte o arquivo [LICENSE](LICENSE).
